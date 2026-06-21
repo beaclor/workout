@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>UL/PPL Split</title>
+
+  <!-- iPhone: открывается как приложение без адресной строки -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="UL/PPL" />
+  <meta name="theme-color" content="#0d0d14" />
+
+  <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    body { background: #0d0d14; }
+    ::-webkit-scrollbar { display: none; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState } = React;
+
+    const days = [
+      { id: "sun", label: "ВС", type: "rest",  icon: "🌙", tag: "ОТДЫХ", accent: "#9a9ab0", color: "#2a2a3a" },
+      { id: "mon", label: "ПН", type: "upper", icon: "💪", tag: "ВЕРХ",  accent: "#e74c3c", color: "#7c1f2e" },
+      { id: "tue", label: "ВТ", type: "lower", icon: "🦵", tag: "НИЗ",   accent: "#3498db", color: "#1a3a5e" },
+      { id: "wed", label: "СР", type: "rest",  icon: "🌙", tag: "ОТДЫХ", accent: "#9a9ab0", color: "#2a2a3a" },
+      { id: "thu", label: "ЧТ", type: "push",  icon: "🔺", tag: "PUSH",  accent: "#c77dff", color: "#5a1a6e" },
+      { id: "fri", label: "ПТ", type: "pull",  icon: "🔻", tag: "PULL",  accent: "#f1c40f", color: "#1a5a3a" },
+      { id: "sat", label: "СБ", type: "legs",  icon: "🏋️", tag: "НОГИ",  accent: "#2ecc71", color: "#1a4a1a" },
+    ];
+
+    const workouts = {
+      upper: {
+        title: "ВЕРХ ТЕЛА",
+        subtitle: "ПН · Upper Body",
+        meta: ["14 подходов", "75–85 мин"],
+        scienceNote: "Каждая мышца получает 2-й стимул в четверг/пятницу — частота 2×/нед доказана как оптимум",
+        groups: [
+          { name: "ГРУДЬ", color: "#e74c3c", exercises: [
+            { name: "Жим на наклонной 30° со штангой", sets: 4, reps: "6–8", rpe: "8", rest: "3 мин", tier: "S", note: "Лопатки сведены и опущены. Локти 45–60° от тела" },
+            { name: "Кабельный флайс (нижний блок)", sets: 3, reps: "12–15", rpe: "8", rest: "90 с", tier: "S", note: "Пик натяжения в сокращённой позиции. Руки слегка согнуты" },
+          ]},
+          { name: "СПИНА", color: "#3498db", exercises: [
+            { name: "Тяга блока нейтральным хватом", sets: 4, reps: "8–10", rpe: "8", rest: "2–3 мин", tier: "S", note: "Полное растяжение вверху. Локти ведут движение вниз и назад" },
+            { name: "Тяга в машине с упором в грудь", sets: 3, reps: "10–12", rpe: "8", rest: "2 мин", tier: "S", note: "Протракция лопаток в начале → ретракция в конце" },
+          ]},
+          { name: "ПЛЕЧИ", color: "#c77dff", exercises: [
+            { name: "Жим в машине сидя", sets: 3, reps: "10–12", rpe: "8", rest: "2 мин", tier: "S", note: "Лучший коэффициент нагрузка/безопасность для передних дельт" },
+            { name: "Кабельный подъём в сторону", sets: 3, reps: "15–20", rpe: "8", rest: "60 с", tier: "S", note: "Кабель держит натяжение внизу — гантели его теряют" },
+          ]},
+          { name: "РУКИ (суперсет)", color: "#f1c40f", exercises: [
+            { name: "Байесовский кёрл на нижнем блоке", sets: 3, reps: "10–12", rpe: "8", rest: "—", tier: "S", note: "Стоя спиной к блоку = бицепс в растянутой позиции. Сразу после👇" },
+            { name: "Разгибания над головой на блоке (EZ)", sets: 3, reps: "10–15", rpe: "8", rest: "90 с", tier: "S", note: "Суперсет с кёрлом. Длинная головка трицепса в растяжении" },
+          ]},
+        ],
+      },
+      lower: {
+        title: "НИЗ ТЕЛА",
+        subtitle: "ВТ · Lower Body",
+        meta: ["15 подходов", "70–80 мин"],
+        scienceNote: "Квадрицепс + бицепс бедра + ягодицы — каждая группа получает 2-й удар в субботу",
+        groups: [
+          { name: "КВАДРИЦЕПСЫ", color: "#2ecc71", exercises: [
+            { name: "Приседания в Смите / Высокий присед", sets: 4, reps: "6–8", rpe: "8", rest: "3 мин", tier: "S", note: "Безопасный отказ без страховщика. Носки 15–30°, колени наружу" },
+            { name: "Жим ногами (узкая постановка)", sets: 3, reps: "12–15", rpe: "8", rest: "2 мин", tier: "A", note: "Узкая стопа = больше квадрицепса. Максимальная глубина без боли в пояснице" },
+            { name: "Разгибания ног в тренажёре", sets: 3, reps: "12–15", rpe: "8", rest: "90 с", tier: "A", note: "Единственный способ нагрузить прямую мышцу бедра в растяжении" },
+          ]},
+          { name: "БИЦЕПС БЕДРА + ЯГОДИЦЫ", color: "#e67e22", exercises: [
+            { name: "Румынская тяга со штангой", sets: 4, reps: "8–10", rpe: "8", rest: "2–3 мин", tier: "S", note: "4 сек опускание. Бёдра назад, нейтральная спина. Растяжение = главное" },
+            { name: "Сгибания ног лёжа в тренажёре", sets: 3, reps: "10–12", rpe: "8", rest: "90 с", tier: "S", note: "Не ограничивай амплитуду вверху — полное растяжение критично" },
+          ]},
+          { name: "ИКРЫ", color: "#95a5a6", exercises: [
+            { name: "Подъём на носки стоя (в машине)", sets: 4, reps: "8–12", rpe: "8", rest: "90 с", tier: "A", note: "2 сек пауза в нижней точке. Икры растут именно от растяжения" },
+          ]},
+        ],
+      },
+      push: {
+        title: "PUSH — ЖИМ",
+        subtitle: "ЧТ · Грудь · Плечи · Трицепс",
+        meta: ["16 подходов", "75–85 мин"],
+        scienceNote: "Другие углы и инструменты vs ПН. Суммарно 4× частота для жимовых мышц",
+        groups: [
+          { name: "ГРУДЬ (горизонт / нижняя)", color: "#e74c3c", exercises: [
+            { name: "Жим гантелей горизонтально", sets: 4, reps: "8–12", rpe: "8", rest: "2–3 мин", tier: "A", note: "Гантели опускаются ниже уровня груди — глубже растяжение чем штанга" },
+            { name: "Отжимания на брусьях с весом", sets: 3, reps: "8–12", rpe: "8", rest: "2 мин", tier: "A", note: "Наклон вперёд = акцент на грудь. Контролируемый спуск до растяжения" },
+          ]},
+          { name: "ПЛЕЧИ (объём)", color: "#c77dff", exercises: [
+            { name: "Жим гантелей над головой / Арнольд-пресс", sets: 3, reps: "10–12", rpe: "8", rest: "2 мин", tier: "A", note: "Полный диапазон. Нейтральный хват снижает нагрузку на вращательную манжету" },
+            { name: "Кабельный подъём в сторону lean-in", sets: 4, reps: "15–20", rpe: "8", rest: "60 с", tier: "S", note: "Наклон к стойке = натяжение в нижней точке. #1 боковая дельта" },
+            { name: "Reverse Pec-Deck (задние дельты)", sets: 3, reps: "15–20", rpe: "8", rest: "60 с", tier: "S", note: "#1 задняя дельта по Ниппарду. Локти строго на уровне плеч" },
+          ]},
+          { name: "ТРИЦЕПС", color: "#e67e22", exercises: [
+            { name: "Жим книзу прямым грифом (хват сверху)", sets: 4, reps: "10–15", rpe: "8", rest: "90 с", tier: "A", note: "Прямой гриф > канат по EMG. Локти прижаты, не гуляют" },
+          ]},
+        ],
+      },
+      pull: {
+        title: "PULL — ТЯГА",
+        subtitle: "ПТ · Спина · Задние дельты · Бицепс",
+        meta: ["17 подходов", "75–85 мин"],
+        scienceNote: "Горизонтальные + вертикальные тяги — оба паттерна обязательны для полного развития спины",
+        groups: [
+          { name: "ШИРОЧАЙШИЕ (вертикальная тяга)", color: "#3498db", exercises: [
+            { name: "Подтягивания с весом нейтральным хватом", sets: 4, reps: "6–8", rpe: "8", rest: "2–3 мин", tier: "S", note: "Нейтральный хват = лучшая нагрузка широчайших + меньше стресса на плечо" },
+            { name: "Тяга блока одной рукой (полуколено)", sets: 3, reps: "10–12", rpe: "8", rest: "90 с", tier: "A", note: "Унилатерально = убирает дисбаланс сторон. Полное растяжение вверху" },
+          ]},
+          { name: "СПИНА (горизонтальная тяга)", color: "#1abc9c", exercises: [
+            { name: "Тяга Медоуза (одна рука к поясу)", sets: 4, reps: "8–10", rpe: "8", rest: "2–3 мин", tier: "A", note: "Максимальное растяжение широчайшей. Можно взять серьёзный вес" },
+            { name: "Face pulls канатом с верхнего блока", sets: 3, reps: "15–20", rpe: "8", rest: "60 с", tier: "A", note: "Важно для здоровья плеч! Внешняя ротация в движении. Не пропускай" },
+          ]},
+          { name: "БИЦЕПС", color: "#f1c40f", exercises: [
+            { name: "Preacher curl / Кёрл Скотта в машине", sets: 3, reps: "10–12", rpe: "8", rest: "90 с", tier: "S", note: "S-тир. Нагрузка в укороченной позиции — лучшее для пика бицепса" },
+            { name: "Байесовский кёрл на нижнем блоке", sets: 3, reps: "12–15", rpe: "8", rest: "90 с", tier: "S", note: "Бицепс в растянутой позиции. Пара с Preacher = полное покрытие ROM" },
+            { name: "Молотковый кёрл с гантелями", sets: 3, reps: "12–15", rpe: "8", rest: "60 с", tier: "A", note: "Брахиалис + брахиорадиалис = толщина руки, не только пик" },
+          ]},
+        ],
+      },
+      legs: {
+        title: "НОГИ — СПЕЦИАЛИЗАЦИЯ",
+        subtitle: "СБ · Квады · Бицепс бедра · Икры",
+        meta: ["16 подходов", "70–80 мин"],
+        scienceNote: "Второй день ног — другие углы. Фокус на прямую мышцу бедра и объём подколенных",
+        groups: [
+          { name: "КВАДРИЦЕПСЫ (акцент — прямая м.б.)", color: "#2ecc71", exercises: [
+            { name: "Фронтальный присед / присед с паузой", sets: 4, reps: "5–6", rpe: "8", rest: "3–4 мин", tier: "S", note: "Вертикальный торс = максимум квадрицепса. 2 сек пауза внизу" },
+            { name: "Болгарские сплит-приседания", sets: 3, reps: "8–10 (каждая нога)", rpe: "8", rest: "2 мин", tier: "A", note: "Большой ROM = прямая мышца бедра в растяжении. Бедро заднее на скамье" },
+            { name: "Разгибания ног сидя", sets: 3, reps: "15–20", rpe: "8", rest: "60 с", tier: "A", note: "Добиваем квадрицепс изолированно. Задержка 1 сек в верхней точке" },
+          ]},
+          { name: "БИЦЕПС БЕДРА", color: "#e67e22", exercises: [
+            { name: "Nordic Hamstring Curl / GHR", sets: 3, reps: "4–6", rpe: "8", rest: "2 мин", tier: "S", note: "Лучшее для длинной головки. Снижает травмы подколенных на 50%. Медленно!" },
+            { name: "Сгибания ног сидя в тренажёре", sets: 3, reps: "10–12", rpe: "8", rest: "90 с", tier: "A", note: "Сидя = нейтральное бедро. Хорошее растяжение вверху. Не бросай вес" },
+          ]},
+          { name: "ИКРЫ + КОРА", color: "#95a5a6", exercises: [
+            { name: "Подъём на носок сидя (камбаловидная)", sets: 4, reps: "10–15", rpe: "8", rest: "60 с", tier: "A", note: "Согнутое колено = изолирует глубокую мышцу икры. Медленный спуск" },
+            { name: "Скручивания на кабеле / Ab-машина", sets: 3, reps: "20–25", rpe: "8", rest: "60 с", tier: "A", note: "Округли спину при скручивании — только так пресс работает полностью" },
+          ]},
+        ],
+      },
+      rest: {
+        title: "ДЕНЬ ОТДЫХА",
+        subtitle: "Восстановление = часть тренинга",
+        tips: [
+          { icon: "😴", title: "Сон 7–9 часов", desc: "Пик GH (гормон роста) — в первые 2 часа глубокого сна" },
+          { icon: "🥩", title: "Белок 1.6–2.2 г/кг веса", desc: "Оптимум для синтеза мышечного белка по мета-анализам" },
+          { icon: "🚶", title: "Лёгкая прогулка 20–30 мин", desc: "Ускоряет кровоток и убирает крепатуру без ущерба восстановлению" },
+          { icon: "💧", title: "Гидратация", desc: "Даже -2% воды снижают силу и когнитивные функции" },
+        ],
+        principles: [
+          { icon: "📈", title: "Прогрессивная перегрузка", desc: "+1–2 кг ИЛИ +1–2 повтора каждую неделю. Без этого нет роста." },
+          { icon: "⚡", title: "RPE 8 = 2 повтора в запасе", desc: "Близко к отказу, но не до него. Оптимум для гипертрофии и восстановления." },
+          { icon: "🔬", title: "Растяжка под нагрузкой", desc: "Упражнения с пиком нагрузки в растянутой позиции дают на 20% больше роста." },
+          { icon: "🔄", title: "Каждая мышца 2× в неделю", desc: "UL-день + PPL-день = доказанный оптимум по мета-анализам (Schoenfeld, 2016)." },
+        ],
+      },
+    };
+
+    const TierBadge = ({ tier }) => {
+      const s = tier === "S" ? { bg: "#FFD700", text: "#000" } : { bg: "#aaaaaa", text: "#000" };
+      return (
+        <span style={{ background: s.bg, color: s.text, fontWeight: 900, fontSize: "0.6rem",
+          padding: "2px 7px", borderRadius: 4, letterSpacing: "0.05em", flexShrink: 0 }}>
+          {tier}-ТИР
+        </span>
+      );
+    };
+
+    function App() {
+      const [activeDay, setActiveDay] = useState("mon");
+      const [openEx, setOpenEx] = useState(null);
+      const day = days.find(d => d.id === activeDay);
+      const workout = workouts[day.type];
+
+      return (
+        <div style={{ minHeight: "100vh", background: "#0d0d14", color: "#e8e8f0",
+          fontFamily: "'Inter','Segoe UI',sans-serif", maxWidth: 480, margin: "0 auto" }}>
+
+          {/* Header */}
+          <div style={{ padding: "18px 16px 12px",
+            background: "linear-gradient(135deg,#13131f,#1a1a2e)", borderBottom: "1px solid #2a2a3e" }}>
+            <div style={{ fontSize: "0.6rem", letterSpacing: "0.2em", color: "#5a5a7e", marginBottom: 3 }}>
+              НАУЧНЫЙ ПЛАН · СРЕДНИЙ УРОВЕНЬ
+            </div>
+            <div style={{ fontSize: "1.6rem", fontWeight: 900, letterSpacing: "0.04em",
+              background: "linear-gradient(90deg,#e8e8f0 50%,#9a7fff)",
+              WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+              UL / PPL SPLIT
+            </div>
+            <div style={{ fontSize: "0.68rem", color: "#5a5a7e", marginTop: 4 }}>
+              По методу Джеффа Ниппарда · 5 дней · 75–85 мин
+            </div>
+          </div>
+
+          {/* Day tabs */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 3,
+            padding: "10px 10px 8px", background: "#111118", borderBottom: "1px solid #1e1e30" }}>
+            {days.map(d => {
+              const active = activeDay === d.id;
+              return (
+                <button key={d.id} onClick={() => { setActiveDay(d.id); setOpenEx(null); }}
+                  style={{ background: active ? `${d.color}cc` : "#1a1a26",
+                    border: `1.5px solid ${active ? d.accent : "#252535"}`,
+                    borderRadius: 8, padding: "7px 2px 5px", cursor: "pointer",
+                    display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
+                  <span style={{ fontSize: "0.55rem", color: active ? d.accent : "#3a3a5a", fontWeight: 800 }}>{d.label}</span>
+                  <span style={{ fontSize: "0.95rem" }}>{d.icon}</span>
+                  <span style={{ fontSize: "0.4rem", color: active ? d.accent : "#2a2a4a", fontWeight: 900 }}>{d.tag}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Content */}
+          <div style={{ padding: "14px 14px 70px" }}>
+
+            {/* Day card */}
+            <div style={{ background: `linear-gradient(135deg,${day.color}bb,${day.accent}18)`,
+              border: `1px solid ${day.accent}44`, borderRadius: 12, padding: "14px 16px", marginBottom: 16 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ fontSize: "1.9rem" }}>{day.icon}</span>
+                <div>
+                  <div style={{ fontWeight: 900, fontSize: "1.1rem" }}>{workout.title}</div>
+                  <div style={{ fontSize: "0.68rem", color: day.accent, fontWeight: 600, marginTop: 1 }}>{workout.subtitle}</div>
+                </div>
+              </div>
+              {workout.meta && (
+                <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+                  {workout.meta.map((m, i) => (
+                    <div key={i} style={{ background: "#00000033", border: "1px solid #ffffff15",
+                      borderRadius: 6, padding: "4px 10px", fontSize: "0.65rem", color: "#c0c0d8" }}>
+                      {i === 0 ? "📊 " : "⏱ "}{m}
+                    </div>
+                  ))}
+                </div>
+              )}
+              {workout.scienceNote && (
+                <div style={{ marginTop: 10, background: "#00000044", border: "1px solid #9a7fff33",
+                  borderRadius: 8, padding: "8px 10px", fontSize: "0.63rem", color: "#9a7fff", lineHeight: 1.5 }}>
+                  🔬 {workout.scienceNote}
+                </div>
+              )}
+            </div>
+
+            {/* Exercises */}
+            {workout.groups && workout.groups.map((group, gi) => (
+              <div key={gi} style={{ marginBottom: 18 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                  <div style={{ width: 3, height: 16, background: group.color, borderRadius: 2 }} />
+                  <span style={{ fontSize: "0.65rem", fontWeight: 800, letterSpacing: "0.12em", color: group.color }}>
+                    {group.name}
+                  </span>
+                </div>
+                {group.exercises.map((ex, ei) => {
+                  const key = `${gi}-${ei}`;
+                  const isOpen = openEx === key;
+                  return (
+                    <div key={ei} onClick={() => setOpenEx(isOpen ? null : key)}
+                      style={{ background: isOpen ? "linear-gradient(135deg,#1e1e30,#181828)" : "linear-gradient(135deg,#181826,#141420)",
+                        border: `1px solid ${isOpen ? group.color + "66" : "#222234"}`,
+                        borderLeft: `3px solid ${group.color}`,
+                        borderRadius: 10, padding: "12px 12px", marginBottom: 7, cursor: "pointer" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+                        <div style={{ fontWeight: 700, fontSize: "0.83rem", lineHeight: 1.35, flex: 1 }}>{ex.name}</div>
+                        <TierBadge tier={ex.tier} />
+                      </div>
+                      <div style={{ display: "flex", gap: 5, marginTop: 9, flexWrap: "wrap" }}>
+                        {[["Подходы", ex.sets], ["Повт.", ex.reps], ["RPE", ex.rpe], ["Отдых", ex.rest]].map(([label, val], si) => (
+                          <div key={si} style={{ background: "#0b0b18", border: "1px solid #242436",
+                            borderRadius: 6, padding: "4px 9px", textAlign: "center" }}>
+                            <div style={{ fontSize: "0.52rem", color: "#4a4a6e" }}>{label}</div>
+                            <div style={{ fontSize: "0.72rem", fontWeight: 700, color: day.accent, marginTop: 1 }}>{val}</div>
+                          </div>
+                        ))}
+                      </div>
+                      {isOpen && ex.note && (
+                        <div style={{ marginTop: 10, background: "#0a0a18", border: `1px solid ${group.color}33`,
+                          borderRadius: 8, padding: "8px 10px", fontSize: "0.65rem", color: "#9a9ab8", lineHeight: 1.55 }}>
+                          💡 {ex.note}
+                        </div>
+                      )}
+                      <div style={{ marginTop: 8, fontSize: "0.55rem", color: isOpen ? "#5a5a7e" : "#3a3a5a", textAlign: "right" }}>
+                        {isOpen ? "▲ свернуть" : "▼ подсказка"}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
+
+            {/* Rest day */}
+            {day.type === "rest" && (
+              <>
+                <div style={{ fontSize: "0.62rem", letterSpacing: "0.15em", color: "#4a4a6e", marginBottom: 10 }}>ВОССТАНОВЛЕНИЕ</div>
+                {workout.tips.map((t, i) => (
+                  <div key={i} style={{ background: "#181826", border: "1px solid #242236",
+                    borderRadius: 10, padding: "12px 14px", marginBottom: 8, display: "flex", gap: 12, alignItems: "flex-start" }}>
+                    <span style={{ fontSize: "1.3rem", flexShrink: 0 }}>{t.icon}</span>
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: "0.82rem" }}>{t.title}</div>
+                      <div style={{ fontSize: "0.65rem", color: "#6a6a8a", marginTop: 2, lineHeight: 1.4 }}>{t.desc}</div>
+                    </div>
+                  </div>
+                ))}
+                <div style={{ fontSize: "0.62rem", letterSpacing: "0.15em", color: "#4a4a6e", marginTop: 18, marginBottom: 10 }}>КЛЮЧЕВЫЕ ПРИНЦИПЫ</div>
+                {workout.principles.map((p, i) => (
+                  <div key={i} style={{ background: "#181826", border: "1px solid #242236",
+                    borderRadius: 10, padding: "11px 13px", marginBottom: 8, display: "flex", gap: 10, alignItems: "flex-start" }}>
+                    <span style={{ fontSize: "1.2rem", flexShrink: 0 }}>{p.icon}</span>
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: "0.8rem" }}>{p.title}</div>
+                      <div style={{ fontSize: "0.63rem", color: "#6a6a8a", marginTop: 2, lineHeight: 1.4 }}>{p.desc}</div>
+                    </div>
+                  </div>
+                ))}
+              </>
+            )}
+          </div>
+
+          {/* Bottom bar */}
+          <div style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)",
+            width: "100%", maxWidth: 480,
+            background: "linear-gradient(0deg,#0d0d14 60%,transparent)",
+            padding: "10px 16px 20px", textAlign: "center" }}>
+            <div style={{ fontSize: "0.57rem", color: "#3a3a5a", letterSpacing: "0.04em" }}>
+              Нажми на упражнение → увидишь технику · S-тир = лучший выбор по науке
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+  </script>
+</body>
+</html>
