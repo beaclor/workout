@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+  <title>Мой план</title>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="Мой план"/>
+  <meta name="theme-color" content="#0d0d14"/>
+  <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+    body{background:#0d0d14;}
+    ::-webkit-scrollbar{display:none;}
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState } = React;
+
+// ─── ДАННЫЕ ТРЕНИРОВОК ────────────────────────────────────────
+const wDays = [
+  {id:"sun",label:"ВС",type:"rest", icon:"🌙",tag:"ОТДЫХ",accent:"#9a9ab0",color:"#2a2a3a"},
+  {id:"mon",label:"ПН",type:"upper",icon:"💪",tag:"ВЕРХ", accent:"#e74c3c",color:"#7c1f2e"},
+  {id:"tue",label:"ВТ",type:"lower",icon:"🦵",tag:"НИЗ",  accent:"#3498db",color:"#1a3a5e"},
+  {id:"wed",label:"СР",type:"rest", icon:"🌙",tag:"ОТДЫХ",accent:"#9a9ab0",color:"#2a2a3a"},
+  {id:"thu",label:"ЧТ",type:"push", icon:"🔺",tag:"PUSH", accent:"#c77dff",color:"#5a1a6e"},
+  {id:"fri",label:"ПТ",type:"pull", icon:"🔻",tag:"PULL", accent:"#f1c40f",color:"#1a5a3a"},
+  {id:"sat",label:"СБ",type:"legs", icon:"🏋️",tag:"НОГИ", accent:"#2ecc71",color:"#1a4a1a"},
+];
+const wWorkouts = {
+  upper:{title:"ВЕРХ ТЕЛА",subtitle:"ПН · Upper Body",meta:["14 подходов","75–85 мин"],
+    scienceNote:"Каждая мышца получает 2-й стимул в четверг/пятницу — частота 2×/нед доказана как оптимум",
+    groups:[
+      {name:"ГРУДЬ",color:"#e74c3c",exercises:[
+        {name:"Жим на наклонной 30° со штангой",sets:4,reps:"6–8",rpe:"8",rest:"3 мин",tier:"S",note:"Лопатки сведены и опущены. Локти 45–60° от тела"},
+        {name:"Кабельный флайс (нижний блок)",sets:3,reps:"12–15",rpe:"8",rest:"90 с",tier:"S",note:"Пик натяжения в сокращённой позиции. Руки слегка согнуты"},
+      ]},
+      {name:"СПИНА",color:"#3498db",exercises:[
+        {name:"Тяга блока нейтральным хватом",sets:4,reps:"8–10",rpe:"8",rest:"2–3 мин",tier:"S",note:"Полное растяжение вверху. Локти ведут движение вниз и назад"},
+        {name:"Тяга в машине с упором в грудь",sets:3,reps:"10–12",rpe:"8",rest:"2 мин",tier:"S",note:"Протракция лопаток в начале → ретракция в конце"},
+      ]},
+      {name:"ПЛЕЧИ",color:"#c77dff",exercises:[
+        {name:"Жим в машине сидя",sets:3,reps:"10–12",rpe:"8",rest:"2 мин",tier:"S",note:"Лучший коэффициент нагрузка/безопасность для передних дельт"},
+        {name:"Кабельный подъём в сторону",sets:3,reps:"15–20",rpe:"8",rest:"60 с",tier:"S",note:"Кабель держит натяжение внизу — гантели его теряют"},
+      ]},
+      {name:"РУКИ (суперсет)",color:"#f1c40f",exercises:[
+        {name:"Байесовский кёрл на нижнем блоке",sets:3,reps:"10–12",rpe:"8",rest:"—",tier:"S",note:"Стоя спиной к блоку = бицепс в растянутой позиции. Сразу после👇"},
+        {name:"Разгибания над головой на блоке (EZ)",sets:3,reps:"10–15",rpe:"8",rest:"90 с",tier:"S",note:"Суперсет с кёрлом. Длинная головка трицепса в растяжении"},
+      ]},
+    ]},
+  lower:{title:"НИЗ ТЕЛА",subtitle:"ВТ · Lower Body",meta:["15 подходов","70–80 мин"],
+    scienceNote:"Квадрицепс + бицепс бедра + ягодицы — каждая группа получает 2-й удар в субботу",
+    groups:[
+      {name:"КВАДРИЦЕПСЫ",color:"#2ecc71",exercises:[
+        {name:"Приседания в Смите / Высокий присед",sets:4,reps:"6–8",rpe:"8",rest:"3 мин",tier:"S",note:"Безопасный отказ без страховщика. Носки 15–30°, колени наружу"},
+        {name:"Жим ногами (узкая постановка)",sets:3,reps:"12–15",rpe:"8",rest:"2 мин",tier:"A",note:"Узкая стопа = больше квадрицепса. Максимальная глубина без боли в пояснице"},
+        {name:"Разгибания ног в тренажёре",sets:3,reps:"12–15",rpe:"8",rest:"90 с",tier:"A",note:"Единственный способ нагрузить прямую мышцу бедра в растяжении"},
+      ]},
+      {name:"БИЦЕПС БЕДРА + ЯГОДИЦЫ",color:"#e67e22",exercises:[
+        {name:"Румынская тяга со штангой",sets:4,reps:"8–10",rpe:"8",rest:"2–3 мин",tier:"S",note:"4 сек опускание. Бёдра назад, нейтральная спина. Растяжение = главное"},
+        {name:"Сгибания ног лёжа в тренажёре",sets:3,reps:"10–12",rpe:"8",rest:"90 с",tier:"S",note:"Не ограничивай амплитуду вверху — полное растяжение критично"},
+      ]},
+      {name:"ИКРЫ",color:"#95a5a6",exercises:[
+        {name:"Подъём на носки стоя (в машине)",sets:4,reps:"8–12",rpe:"8",rest:"90 с",tier:"A",note:"2 сек пауза в нижней точке. Икры растут именно от растяжения"},
+      ]},
+    ]},
+  push:{title:"PUSH — ЖИМ",subtitle:"ЧТ · Грудь · Плечи · Трицепс",meta:["16 подходов","75–85 мин"],
+    scienceNote:"Другие углы и инструменты vs ПН. Суммарно 4× частота для жимовых мышц",
+    groups:[
+      {name:"ГРУДЬ (горизонт / нижняя)",color:"#e74c3c",exercises:[
+        {name:"Жим гантелей горизонтально",sets:4,reps:"8–12",rpe:"8",rest:"2–3 мин",tier:"A",note:"Гантели опускаются ниже уровня груди — глубже растяжение чем штанга"},
+        {name:"Отжимания на брусьях с весом",sets:3,reps:"8–12",rpe:"8",rest:"2 мин",tier:"A",note:"Наклон вперёд = акцент на грудь. Контролируемый спуск до растяжения"},
+      ]},
+      {name:"ПЛЕЧИ (объём)",color:"#c77dff",exercises:[
+        {name:"Жим гантелей над головой / Арнольд-пресс",sets:3,reps:"10–12",rpe:"8",rest:"2 мин",tier:"A",note:"Полный диапазон. Нейтральный хват снижает нагрузку на вращательную манжету"},
+        {name:"Кабельный подъём в сторону lean-in",sets:4,reps:"15–20",rpe:"8",rest:"60 с",tier:"S",note:"Наклон к стойке = натяжение в нижней точке. #1 боковая дельта"},
+        {name:"Reverse Pec-Deck (задние дельты)",sets:3,reps:"15–20",rpe:"8",rest:"60 с",tier:"S",note:"#1 задняя дельта по Ниппарду. Локти строго на уровне плеч"},
+      ]},
+      {name:"ТРИЦЕПС",color:"#e67e22",exercises:[
+        {name:"Жим книзу прямым грифом (хват сверху)",sets:4,reps:"10–15",rpe:"8",rest:"90 с",tier:"A",note:"Прямой гриф > канат по EMG. Локти прижаты, не гуляют"},
+      ]},
+    ]},
+  pull:{title:"PULL — ТЯГА",subtitle:"ПТ · Спина · Задние дельты · Бицепс",meta:["17 подходов","75–85 мин"],
+    scienceNote:"Горизонтальные + вертикальные тяги — оба паттерна обязательны для полного развития спины",
+    groups:[
+      {name:"ШИРОЧАЙШИЕ (вертикальная тяга)",color:"#3498db",exercises:[
+        {name:"Подтягивания с весом нейтральным хватом",sets:4,reps:"6–8",rpe:"8",rest:"2–3 мин",tier:"S",note:"Нейтральный хват = лучшая нагрузка широчайших + меньше стресса на плечо"},
+        {name:"Тяга блока одной рукой (полуколено)",sets:3,reps:"10–12",rpe:"8",rest:"90 с",tier:"A",note:"Унилатерально = убирает дисбаланс сторон. Полное растяжение вверху"},
+      ]},
+      {name:"СПИНА (горизонтальная тяга)",color:"#1abc9c",exercises:[
+        {name:"Тяга Медоуза (одна рука к поясу)",sets:4,reps:"8–10",rpe:"8",rest:"2–3 мин",tier:"A",note:"Максимальное растяжение широчайшей. Можно взять серьёзный вес"},
+        {name:"Face pulls канатом с верхнего блока",sets:3,reps:"15–20",rpe:"8",rest:"60 с",tier:"A",note:"Важно для здоровья плеч! Внешняя ротация в движении. Не пропускай"},
+      ]},
+      {name:"БИЦЕПС",color:"#f1c40f",exercises:[
+        {name:"Preacher curl / Кёрл Скотта в машине",sets:3,reps:"10–12",rpe:"8",rest:"90 с",tier:"S",note:"S-тир. Нагрузка в укороченной позиции — лучшее для пика бицепса"},
+        {name:"Байесовский кёрл на нижнем блоке",sets:3,reps:"12–15",rpe:"8",rest:"90 с",tier:"S",note:"Бицепс в растянутой позиции. Пара с Preacher = полное покрытие ROM"},
+        {name:"Молотковый кёрл с гантелями",sets:3,reps:"12–15",rpe:"8",rest:"60 с",tier:"A",note:"Брахиалис + брахиорадиалис = толщина руки, не только пик"},
+      ]},
+    ]},
+  legs:{title:"НОГИ — СПЕЦИАЛИЗАЦИЯ",subtitle:"СБ · Квады · Бицепс бедра · Икры",meta:["16 подходов","70–80 мин"],
+    scienceNote:"Второй день ног — другие углы. Фокус на прямую мышцу бедра и объём подколенных",
+    groups:[
+      {name:"КВАДРИЦЕПСЫ (акцент — прямая м.б.)",color:"#2ecc71",exercises:[
+        {name:"Фронтальный присед / присед с паузой",sets:4,reps:"5–6",rpe:"8",rest:"3–4 мин",tier:"S",note:"Вертикальный торс = максимум квадрицепса. 2 сек пауза внизу"},
+        {name:"Болгарские сплит-приседания",sets:3,reps:"8–10 (каждая нога)",rpe:"8",rest:"2 мин",tier:"A",note:"Большой ROM = прямая мышца бедра в растяжении. Бедро заднее на скамье"},
+        {name:"Разгибания ног сидя",sets:3,reps:"15–20",rpe:"8",rest:"60 с",tier:"A",note:"Добиваем квадрицепс изолированно. Задержка 1 сек в верхней точке"},
+      ]},
+      {name:"БИЦЕПС БЕДРА",color:"#e67e22",exercises:[
+        {name:"Nordic Hamstring Curl / GHR",sets:3,reps:"4–6",rpe:"8",rest:"2 мин",tier:"S",note:"Лучшее для длинной головки. Снижает травмы подколенных на 50%. Медленно!"},
+        {name:"Сгибания ног сидя в тренажёре",sets:3,reps:"10–12",rpe:"8",rest:"90 с",tier:"A",note:"Сидя = нейтральное бедро. Хорошее растяжение вверху. Не бросай вес"},
+      ]},
+      {name:"ИКРЫ + КОРА",color:"#95a5a6",exercises:[
+        {name:"Подъём на носок сидя (камбаловидная)",sets:4,reps:"10–15",rpe:"8",rest:"60 с",tier:"A",note:"Согнутое колено = изолирует глубокую мышцу икры. Медленный спуск"},
+        {name:"Скручивания на кабеле / Ab-машина",sets:3,reps:"20–25",rpe:"8",rest:"60 с",tier:"A",note:"Округли спину при скручивании — только так пресс работает полностью"},
+      ]},
+    ]},
+  rest:{title:"ДЕНЬ ОТДЫХА",subtitle:"Восстановление = часть тренинга",
+    tips:[
+      {icon:"😴",title:"Сон 7–9 часов",desc:"Пик GH (гормон роста) — в первые 2 часа глубокого сна"},
+      {icon:"🥩",title:"Белок 1.6–2.2 г/кг веса",desc:"Оптимум для синтеза мышечного белка по мета-анализам"},
+      {icon:"🚶",title:"Лёгкая прогулка 20–30 мин",desc:"Ускоряет кровоток и убирает крепатуру без ущерба восстановлению"},
+      {icon:"💧",title:"Гидратация",desc:"Даже -2% воды снижают силу и когнитивные функции"},
+    ],
+    principles:[
+      {icon:"📈",title:"Прогрессивная перегрузка",desc:"+1–2 кг ИЛИ +1–2 повтора каждую неделю. Без этого нет роста."},
+      {icon:"⚡",title:"RPE 8 = 2 повтора в запасе",desc:"Близко к отказу, но не до него. Оптимум для гипертрофии и восстановления."},
+      {icon:"🔬",title:"Растяжка под нагрузкой",desc:"Упражнения с пиком нагрузки в растянутой позиции дают на 20% больше роста."},
+      {icon:"🔄",title:"Каждая мышца 2× в неделю",desc:"UL-день + PPL-день = доказанный оптимум по мета-анализам (Schoenfeld, 2016)."},
+    ]},
+};
+
+// ─── ДАННЫЕ ПИТАНИЯ ───────────────────────────────────────────
+const nMeals = [
+  {id:"preworkout",time:"7:00",label:"ПРЕ-ВОРКАУТ",icon:"⚡",color:"#f59e0b",kcal:220,p:20,f:2,c:32,fiber:2,
+    tag:"Быстро, не перегружая желудок",
+    items:[
+      {name:"Сывороточный протеин",amount:"20г (½ порции)",note:"Быстрый сигнал мышцам. Разбавь водой, не молоком",iron:false},
+      {name:"Банан",amount:"1 шт",note:"Быстрые углеводы = топливо для первых подходов. Калий снижает судороги",iron:false},
+    ]},
+  {id:"workout",time:"8:00 – 9:00",label:"ТРЕНИРОВКА",icon:"🏋️",color:"#e74c3c",kcal:0,p:0,f:0,c:0,fiber:0,
+    tag:"UL/PPL сплит · 75–85 мин",
+    items:[{name:"Вода",amount:"500–700мл во время",note:"На каждый кг потери веса — 1.5л воды после",iron:false}]},
+  {id:"postworkout",time:"9:10 – 9:25",label:"ПОСТ-ВОРКАУТ",icon:"💪",color:"#3498db",kcal:300,p:38,f:3,c:28,fiber:1,
+    tag:"Самый важный приём дня — не пропускай",
+    items:[
+      {name:"Сывороточный протеин",amount:"30г (1 полная порция)",note:"Анаболическое окно открыто. Сыворотка — лучший выбор по скорости",iron:false},
+      {name:"Рисовые крекеры / банан",amount:"40–50г",note:"Закрывает гликоген. Без углеводов здесь белок частично сожжётся как топливо",iron:false},
+      {name:"Вода",amount:"400мл минимум",note:"Восстанови потери жидкости до того как сесть за работу",iron:false},
+    ]},
+  {id:"breakfast",time:"11:00 – 11:30",label:"ЗАВТРАК",icon:"🌅",color:"#f39c12",kcal:600,p:44,f:20,c:64,fiber:10,
+    tag:"Первый большой приём — желудок уже готов",
+    items:[
+      {name:"Овсянка цельнозерновая",amount:"80г сухой",note:"β-глюкан замедляет глюкозу. Льняное масло добавь после варки",iron:true},
+      {name:"Яйца целые",amount:"3 шт",note:"Полный аминокислотный профиль + холин для либидо и работы мозга",iron:true},
+      {name:"Шпинат свежий",amount:"60г",note:"#1 по железу среди зелени. Лимонный сок рядом → усвоение Fe ×3",iron:true},
+      {name:"Черника / любые ягоды",amount:"100г",note:"Антоцианы снижают воспаление после тренировки",iron:false},
+      {name:"Льняное масло",amount:"1 ч.л. в кашу",note:"Омега-3 вместо рыбы. Добавляй после приготовления, не жарь",iron:false},
+      {name:"Тыквенные семечки",amount:"20г",note:"Цинк = прямой предшественник тестостерона",iron:true},
+    ]},
+  {id:"lunch",time:"13:30 – 14:00",label:"ОБЕД",icon:"🍽️",color:"#27ae60",kcal:680,p:52,f:18,c:74,fiber:12,
+    tag:"Главный приём — максимум белка и клетчатки",
+    items:[
+      {name:"Говядина / говяжья печень",amount:"180г",note:"Гем-железо усваивается в 2–3× лучше растительного. Печень — рекордсмен по Fe",iron:true},
+      {name:"Гречка варёная",amount:"200г",note:"Рутин + медленные углеводы. Клетчатка 3г/100г. Лучше риса для сушки",iron:true},
+      {name:"Брокколи / цветная капуста",amount:"200г",note:"ДИМ нейтрализует эстроген. Незаменим на сушке",iron:true},
+      {name:"Оливковое масло extra virgin",amount:"1 ст.л.",note:"Мononенасыщенные жиры = строительный материал тестостерона",iron:false},
+      {name:"Квашеная капуста",amount:"50г",note:"Пробиотики + витамин С → усвоение железа ×3",iron:false},
+    ]},
+  {id:"snack",time:"16:30",label:"ПЕРЕКУС",icon:"🥜",color:"#9b59b6",kcal:260,p:22,f:11,c:20,fiber:4,
+    tag:"Держит сытость до ужина",
+    items:[
+      {name:"Греческий йогурт 2%",amount:"200г",note:"Казеин + пробиотики. Насыщает на 3–4 часа",iron:false},
+      {name:"Грецкие орехи",amount:"20г (4–5 шт)",note:"Омега-3 + мелатонин. Лучший орех для либидо и сна",iron:true},
+      {name:"Яблоко с кожурой",amount:"1 шт",note:"Пектин — растворимая клетчатка. Кожура обязательна!",iron:false},
+    ]},
+  {id:"dinner",time:"19:30 – 20:00",label:"УЖИН",icon:"🌙",color:"#1abc9c",kcal:460,p:46,f:16,c:32,fiber:8,
+    tag:"Белок без лишних углеводов — ночное восстановление",
+    items:[
+      {name:"Куриные бёдра без кожи / индейка",amount:"220г",note:"Больше железа и цинка, чем грудка. Сочнее, не пересыхает",iron:true},
+      {name:"Чечевица варёная",amount:"150г",note:"18г белка + 8г клетчатки на 100г. Железо + фолат",iron:true},
+      {name:"Шпинат тушёный с чесноком",amount:"150г",note:"Тепловая обработка увеличивает доступность железа. Чеснок = аллицин для либидо",iron:true},
+      {name:"Авокадо",amount:"½ шт",note:"Мononенасыщенные жиры поддерживают тестостерон во время сна",iron:false},
+    ]},
+  {id:"evening",time:"21:30",label:"ПЕРЕД СНОМ",icon:"🧀",color:"#95a5a6",kcal:200,p:22,f:8,c:10,fiber:1,
+    tag:"Медленный белок питает мышцы 6–8 часов",
+    items:[
+      {name:"Творог 5%",amount:"180г",note:"Казеин медленно переваривается всю ночь",iron:false},
+      {name:"Грецкий орех",amount:"15г (3 шт)",note:"Омега-3 + мелатонин улучшают качество сна и восстановление",iron:false},
+    ]},
+];
+
+const nIronFoods = [
+  {name:"Говяжья печень",val:"6.5 мг/100г",type:"гем",tag:"🏆 #1"},
+  {name:"Говядина",val:"2.7 мг/100г",type:"гем",tag:"S-тир"},
+  {name:"Куриные бёдра",val:"1.3 мг/100г",type:"гем",tag:"ужин ✓"},
+  {name:"Чечевица",val:"3.3 мг/100г",type:"негем",tag:"+ С = ×3"},
+  {name:"Шпинат",val:"2.7 мг/100г",type:"негем",tag:"+ С = ×3"},
+  {name:"Тыквенные семечки",val:"3.3 мг/100г",type:"негем",tag:"цинк ✓"},
+  {name:"Грецкий орех",val:"2.9 мг/100г",type:"негем",tag:"омега-3 ✓"},
+  {name:"Тёмный шоколад 85%+",val:"3.1 мг/100г",type:"негем",tag:"флавоноиды"},
+];
+
+const nRules = [
+  {icon:"⚡",title:"Тренировка с минимумом еды",desc:"Протеин + банан в 7:00. Полный завтрак через 30 мин после тренировки — желудок готов"},
+  {icon:"🍋",title:"Витамин C с негемовым железом",desc:"Лимон, квашеная капуста или перец рядом с чечевицей/шпинатом → усвоение железа ×2–3"},
+  {icon:"☕",title:"Кофе — после завтрака",desc:"Таниды блокируют железо. Первый кофе пей через 1 час после еды, не до"},
+  {icon:"🥑",title:"Омега-3 без рыбы",desc:"Льняное масло в кашу + грецкие орехи + авокадо каждый день"},
+  {icon:"💧",title:"Вода 2.5–3 л/день",desc:"Клетчатка без воды не работает. Начни день с 400мл сразу после пробуждения"},
+  {icon:"📅",title:"Дни без тренировки (ВС, СР)",desc:"Убери пре-воркаут (220 ккал) и пост-воркаут (300 ккал). Итого ~1 900 ккал — углубляет дефицит"},
+];
+
+// ─── КОМПОНЕНТЫ ───────────────────────────────────────────────
+function TierBadge({tier}){
+  const s=tier==="S"?{bg:"#FFD700",text:"#000"}:{bg:"#aaaaaa",text:"#000"};
+  return <span style={{background:s.bg,color:s.text,fontWeight:900,fontSize:"0.6rem",
+    padding:"2px 7px",borderRadius:4,letterSpacing:"0.05em",flexShrink:0}}>{tier}-ТИР</span>;
+}
+
+function MacroBar({label,value,color}){
+  const targets={БЕЛОК:165,ЖИРЫ:67,УГЛЕВОДЫ:258,КЛЕТЧАТКА:35};
+  const pct=Math.min((value/(targets[label]||100))*100,100);
+  return(
+    <div style={{marginBottom:10}}>
+      <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}>
+        <span style={{fontSize:"0.65rem",color:"#7a7a9a",letterSpacing:"0.08em"}}>{label}</span>
+        <span style={{fontSize:"0.65rem",fontWeight:700,color}}>{value}г / {targets[label]}г</span>
+      </div>
+      <div style={{height:5,background:"#1e1e30",borderRadius:3,overflow:"hidden"}}>
+        <div style={{height:"100%",width:`${pct}%`,background:color,borderRadius:3}}/>
+      </div>
+    </div>
+  );
+}
+
+// ─── ЭКРАН: ГЛАВНАЯ ───────────────────────────────────────────
+function HomeScreen({onNav}){
+  return(
+    <div style={{minHeight:"100vh",background:"#0d0d14",display:"flex",flexDirection:"column",
+      alignItems:"center",justifyContent:"center",padding:"32px 24px",
+      fontFamily:"'Inter','Segoe UI',sans-serif",color:"#e8e8f0"}}>
+      <div style={{fontSize:"0.58rem",letterSpacing:"0.25em",color:"#3a3a5e",marginBottom:10}}>
+        НАУЧНЫЙ ПЛАН · JEFF NIPPARD
+      </div>
+      <div style={{fontSize:"2.2rem",fontWeight:900,
+        background:"linear-gradient(90deg,#e8e8f0 40%,#9a7fff)",
+        WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",
+        textAlign:"center",marginBottom:6}}>
+        МОЙ ПЛАН
+      </div>
+      <div style={{fontSize:"0.68rem",color:"#3a3a5e",textAlign:"center",marginBottom:52}}>
+        UL/PPL · Рекомпозиция · 180 см · 81 кг
+      </div>
+
+      {[
+        {key:"workout",icon:"🏋️",label:"ТРЕНИРОВКИ",
+          desc:"UL/PPL сплит · 5 дней в неделю\nS-тир упражнения по Ниппарду",
+          bg:"linear-gradient(135deg,#7c1f2e,#1a1a2e)",border:"#e74c3c44",labelColor:"#e74c3c"},
+        {key:"nutrition",icon:"🥗",label:"ПИТАНИЕ",
+          desc:"2 400 ккал · Б165 / Ж67 / У258\nБез рыбы · Зал в 8:00 · Железо ✓",
+          bg:"linear-gradient(135deg,#1a4a1a,#0d1a0d)",border:"#4ade8044",labelColor:"#4ade80"},
+      ].map(b=>(
+        <button key={b.key} onClick={()=>onNav(b.key)}
+          style={{display:"flex",alignItems:"center",gap:18,width:"100%",maxWidth:340,
+            padding:"22px 22px",borderRadius:16,border:`1px solid ${b.border}`,
+            background:b.bg,cursor:"pointer",marginBottom:14,textAlign:"left"}}>
+          <span style={{fontSize:"2.4rem",flexShrink:0}}>{b.icon}</span>
+          <div>
+            <div style={{fontSize:"1rem",fontWeight:900,color:b.labelColor,marginBottom:4}}>{b.label}</div>
+            <div style={{fontSize:"0.63rem",color:"#5a5a7e",lineHeight:1.5,whiteSpace:"pre-line"}}>{b.desc}</div>
+          </div>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// ─── ЭКРАН: ТРЕНИРОВКИ ────────────────────────────────────────
+function WorkoutScreen({onBack}){
+  const [activeDay,setActiveDay]=useState("mon");
+  const [openEx,setOpenEx]=useState(null);
+  const day=wDays.find(d=>d.id===activeDay);
+  const workout=wWorkouts[day.type];
+
+  return(
+    <div style={{minHeight:"100vh",background:"#0d0d14",color:"#e8e8f0",
+      fontFamily:"'Inter','Segoe UI',sans-serif",maxWidth:480,margin:"0 auto"}}>
+
+      <div style={{padding:"14px 16px 10px",
+        background:"linear-gradient(135deg,#13131f,#1a1a2e)",
+        borderBottom:"1px solid #2a2a3e",display:"flex",alignItems:"center",gap:12}}>
+        <button onClick={onBack} style={{background:"#1a1a2e",border:"1px solid #2a2a3e",
+          borderRadius:8,padding:"6px 12px",color:"#9a7fff",fontSize:"0.75rem",
+          fontWeight:700,cursor:"pointer",flexShrink:0}}>← Назад</button>
+        <div>
+          <div style={{fontSize:"0.55rem",letterSpacing:"0.2em",color:"#5a5a7e"}}>НАУЧНЫЙ ПЛАН</div>
+          <div style={{fontSize:"1.2rem",fontWeight:900,
+            background:"linear-gradient(90deg,#e8e8f0 50%,#9a7fff)",
+            WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>
+            UL / PPL SPLIT
+          </div>
+        </div>
+      </div>
+
+      <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:3,
+        padding:"8px 8px 6px",background:"#111118",borderBottom:"1px solid #1e1e30"}}>
+        {wDays.map(d=>{
+          const active=activeDay===d.id;
+          return(
+            <button key={d.id} onClick={()=>{setActiveDay(d.id);setOpenEx(null);}}
+              style={{background:active?`${d.color}cc`:"#1a1a26",
+                border:`1.5px solid ${active?d.accent:"#252535"}`,
+                borderRadius:8,padding:"7px 2px 5px",cursor:"pointer",
+                display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
+              <span style={{fontSize:"0.55rem",color:active?d.accent:"#3a3a5a",fontWeight:800}}>{d.label}</span>
+              <span style={{fontSize:"0.95rem"}}>{d.icon}</span>
+              <span style={{fontSize:"0.4rem",color:active?d.accent:"#2a2a4a",fontWeight:900}}>{d.tag}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      <div style={{padding:"12px 12px 70px"}}>
+        <div style={{background:`linear-gradient(135deg,${day.color}bb,${day.accent}18)`,
+          border:`1px solid ${day.accent}44`,borderRadius:12,padding:"12px 14px",marginBottom:14}}>
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <span style={{fontSize:"1.7rem"}}>{day.icon}</span>
+            <div>
+              <div style={{fontWeight:900,fontSize:"1rem"}}>{workout.title}</div>
+              <div style={{fontSize:"0.65rem",color:day.accent,marginTop:1}}>{workout.subtitle}</div>
+            </div>
+          </div>
+          {workout.meta&&(
+            <div style={{display:"flex",gap:8,marginTop:10}}>
+              {workout.meta.map((m,i)=>(
+                <div key={i} style={{background:"#00000033",border:"1px solid #ffffff15",
+                  borderRadius:6,padding:"4px 10px",fontSize:"0.63rem",color:"#c0c0d8"}}>
+                  {i===0?"📊 ":"⏱ "}{m}
+                </div>
+              ))}
+            </div>
+          )}
+          {workout.scienceNote&&(
+            <div style={{marginTop:10,background:"#00000044",border:"1px solid #9a7fff33",
+              borderRadius:8,padding:"8px 10px",fontSize:"0.62rem",color:"#9a7fff",lineHeight:1.5}}>
+              🔬 {workout.scienceNote}
+            </div>
+          )}
+        </div>
+
+        {workout.groups&&workout.groups.map((group,gi)=>(
+          <div key={gi} style={{marginBottom:16}}>
+            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+              <div style={{width:3,height:16,background:group.color,borderRadius:2}}/>
+              <span style={{fontSize:"0.65rem",fontWeight:800,letterSpacing:"0.12em",color:group.color}}>
+                {group.name}
+              </span>
+            </div>
+            {group.exercises.map((ex,ei)=>{
+              const key=`${gi}-${ei}`;
+              const isOpen=openEx===key;
+              return(
+                <div key={ei} onClick={()=>setOpenEx(isOpen?null:key)}
+                  style={{background:isOpen?"linear-gradient(135deg,#1e1e30,#181828)":"linear-gradient(135deg,#181826,#141420)",
+                    border:`1px solid ${isOpen?group.color+"66":"#222234"}`,
+                    borderLeft:`3px solid ${group.color}`,
+                    borderRadius:10,padding:"11px 12px",marginBottom:7,cursor:"pointer"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
+                    <div style={{fontWeight:700,fontSize:"0.82rem",lineHeight:1.35,flex:1}}>{ex.name}</div>
+                    <TierBadge tier={ex.tier}/>
+                  </div>
+                  <div style={{display:"flex",gap:5,marginTop:8,flexWrap:"wrap"}}>
+                    {[["Подходы",ex.sets],["Повт.",ex.reps],["RPE",ex.rpe],["Отдых",ex.rest]].map(([l,v],si)=>(
+                      <div key={si} style={{background:"#0b0b18",border:"1px solid #242436",
+                        borderRadius:6,padding:"4px 8px",textAlign:"center"}}>
+                        <div style={{fontSize:"0.52rem",color:"#4a4a6e"}}>{l}</div>
+                        <div style={{fontSize:"0.7rem",fontWeight:700,color:day.accent,marginTop:1}}>{v}</div>
+                      </div>
+                    ))}
+                  </div>
+                  {isOpen&&ex.note&&(
+                    <div style={{marginTop:8,background:"#0a0a18",border:`1px solid ${group.color}33`,
+                      borderRadius:8,padding:"8px 10px",fontSize:"0.63rem",color:"#9a9ab8",lineHeight:1.55}}>
+                      💡 {ex.note}
+                    </div>
+                  )}
+                  <div style={{marginTop:6,fontSize:"0.54rem",color:isOpen?"#5a5a7e":"#3a3a5a",textAlign:"right"}}>
+                    {isOpen?"▲ свернуть":"▼ подсказка"}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ))}
+
+        {day.type==="rest"&&(
+          <>
+            <div style={{fontSize:"0.62rem",letterSpacing:"0.15em",color:"#6a6a8e",marginBottom:10}}>ВОССТАНОВЛЕНИЕ</div>
+            {workout.tips.map((t,i)=>(
+              <div key={i} style={{background:"#181826",border:"1px solid #242236",
+                borderRadius:10,padding:"12px 14px",marginBottom:8,display:"flex",gap:12,alignItems:"flex-start"}}>
+                <span style={{fontSize:"1.3rem",flexShrink:0}}>{t.icon}</span>
+                <div>
+                  <div style={{fontWeight:700,fontSize:"0.82rem"}}>{t.title}</div>
+                  <div style={{fontSize:"0.65rem",color:"#6a6a8a",marginTop:2,lineHeight:1.4}}>{t.desc}</div>
+                </div>
+              </div>
+            ))}
+            <div style={{fontSize:"0.62rem",letterSpacing:"0.15em",color:"#6a6a8e",marginTop:16,marginBottom:10}}>ПРИНЦИПЫ</div>
+            {workout.principles.map((p,i)=>(
+              <div key={i} style={{background:"#181826",border:"1px solid #242236",
+                borderRadius:10,padding:"11px 13px",marginBottom:8,display:"flex",gap:10,alignItems:"flex-start"}}>
+                <span style={{fontSize:"1.2rem",flexShrink:0}}>{p.icon}</span>
+                <div>
+                  <div style={{fontWeight:700,fontSize:"0.8rem"}}>{p.title}</div>
+                  <div style={{fontSize:"0.63rem",color:"#6a6a8a",marginTop:2,lineHeight:1.4}}>{p.desc}</div>
+                </div>
+              </div>
+            ))}
+          </>
+        )}
+      </div>
+
+      <div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",
+        width:"100%",maxWidth:480,background:"linear-gradient(0deg,#0d0d14 60%,transparent)",
+        padding:"10px 16px 16px",textAlign:"center"}}>
+        <div style={{fontSize:"0.55rem",color:"#3a3a5a"}}>
+          Нажми на упражнение → техника · S-тир = лучшее по науке
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── ЭКРАН: ПИТАНИЕ ───────────────────────────────────────────
+function NutritionScreen({onBack}){
+  const [tab,setTab]=useState("meals");
+  const [openMeal,setOpenMeal]=useState("preworkout");
+  const activeMeal=nMeals.find(m=>m.id===openMeal);
+  const real=nMeals.filter(m=>m.kcal>0);
+  const totP=real.reduce((s,m)=>s+m.p,0);
+  const totF=real.reduce((s,m)=>s+m.f,0);
+  const totC=real.reduce((s,m)=>s+m.c,0);
+  const totFiber=real.reduce((s,m)=>s+m.fiber,0);
+  const totKcal=real.reduce((s,m)=>s+m.kcal,0);
+
+  return(
+    <div style={{minHeight:"100vh",background:"#0b0f0e",color:"#e8ede8",
+      fontFamily:"'Inter','Segoe UI',sans-serif",maxWidth:480,margin:"0 auto"}}>
+
+      <div style={{padding:"14px 16px 10px",
+        background:"linear-gradient(160deg,#0d1a12,#111a0f)",
+        borderBottom:"1px solid #1a2a1a",display:"flex",alignItems:"center",gap:12}}>
+        <button onClick={onBack} style={{background:"#0d1a0d",border:"1px solid #1a3a1a",
+          borderRadius:8,padding:"6px 12px",color:"#4ade80",fontSize:"0.75rem",
+          fontWeight:700,cursor:"pointer",flexShrink:0}}>← Назад</button>
+        <div>
+          <div style={{fontSize:"0.55rem",letterSpacing:"0.2em",color:"#3a6a3a"}}>ПЛАН ПИТАНИЯ</div>
+          <div style={{fontSize:"1.2rem",fontWeight:900,
+            background:"linear-gradient(90deg,#e8ede8 40%,#4ade80)",
+            WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>
+            СУШКА + МАССА
+          </div>
+        </div>
+      </div>
+
+      <div style={{padding:"10px 12px 6px",background:"#0d1208",borderBottom:"1px solid #1a2a1a"}}>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:5,marginBottom:8}}>
+          {[{l:"ККАЛ",v:"2 400",c:"#4ade80"},{l:"БЕЛОК",v:"165г",c:"#60a5fa"},
+            {l:"ЖИРЫ",v:"67г",c:"#f59e0b"},{l:"УГЛЕВОДЫ",v:"258г",c:"#a78bfa"}].map((m,i)=>(
+            <div key={i} style={{background:"#0d1a12",border:`1px solid ${m.c}33`,
+              borderRadius:8,padding:"6px 4px",textAlign:"center"}}>
+              <div style={{fontSize:"0.46rem",color:"#3a6a3a",letterSpacing:"0.08em"}}>{m.l}</div>
+              <div style={{fontSize:"0.85rem",fontWeight:900,color:m.c}}>{m.v}</div>
+            </div>
+          ))}
+        </div>
+
+        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)"}}>
+          {[{id:"meals",label:"🍽 Приёмы"},{id:"iron",label:"⚡ Железо"},{id:"rules",label:"📋 Правила"}].map(t=>(
+            <button key={t.id} onClick={()=>setTab(t.id)} style={{background:"none",border:"none",
+              borderBottom:`2px solid ${tab===t.id?"#4ade80":"transparent"}`,
+              color:tab===t.id?"#4ade80":"#3a5a3a",
+              padding:"9px 4px",fontSize:"0.68rem",fontWeight:700,cursor:"pointer"}}>
+              {t.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {tab==="meals"&&(
+        <div style={{padding:"10px 12px 70px"}}>
+          <div style={{display:"flex",gap:6,overflowX:"auto",paddingBottom:4,marginBottom:12}}>
+            {nMeals.map(m=>(
+              <button key={m.id} onClick={()=>setOpenMeal(m.id)} style={{
+                background:openMeal===m.id?`${m.color}22`:"#111a0f",
+                border:`1.5px solid ${openMeal===m.id?m.color:"#1e2e1e"}`,
+                borderRadius:10,padding:"6px 8px",cursor:"pointer",
+                display:"flex",flexDirection:"column",alignItems:"center",
+                gap:2,flexShrink:0,minWidth:54}}>
+                <span style={{fontSize:"1rem"}}>{m.icon}</span>
+                <span style={{fontSize:"0.42rem",color:openMeal===m.id?m.color:"#2a4a2a",
+                  fontWeight:800,textAlign:"center",lineHeight:1.2}}>{m.label}</span>
+              </button>
+            ))}
+          </div>
+
+          {activeMeal&&(
+            <>
+              <div style={{background:`linear-gradient(135deg,${activeMeal.color}18,#0d1a0d)`,
+                border:`1px solid ${activeMeal.color}44`,borderRadius:12,padding:"12px",marginBottom:12}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:10}}>
+                    <span style={{fontSize:"1.5rem"}}>{activeMeal.icon}</span>
+                    <div>
+                      <div style={{fontWeight:900,fontSize:"0.95rem"}}>{activeMeal.label}</div>
+                      <div style={{fontSize:"0.62rem",color:activeMeal.color,marginTop:1}}>{activeMeal.time}</div>
+                    </div>
+                  </div>
+                  {activeMeal.kcal>0&&(
+                    <div style={{textAlign:"right"}}>
+                      <div style={{fontSize:"1.2rem",fontWeight:900,color:activeMeal.color}}>{activeMeal.kcal}</div>
+                      <div style={{fontSize:"0.48rem",color:"#3a6a3a"}}>ККАЛ</div>
+                    </div>
+                  )}
+                </div>
+                <div style={{marginTop:7,background:"#00000033",borderRadius:6,padding:"5px 8px",
+                  fontSize:"0.6rem",color:"#5a8a5a",fontStyle:"italic"}}>{activeMeal.tag}</div>
+                {activeMeal.kcal>0&&(
+                  <div style={{display:"flex",gap:5,marginTop:8}}>
+                    {[{l:"Б",v:activeMeal.p,c:"#60a5fa"},{l:"Ж",v:activeMeal.f,c:"#f59e0b"},
+                      {l:"У",v:activeMeal.c,c:"#a78bfa"},{l:"КЛ",v:activeMeal.fiber,c:"#4ade80"}].map((x,i)=>(
+                      <div key={i} style={{background:"#0a120a",border:`1px solid ${x.c}33`,
+                        borderRadius:6,padding:"4px 8px",textAlign:"center",flex:1}}>
+                        <div style={{fontSize:"0.48rem",color:"#3a5a3a"}}>{x.l}</div>
+                        <div style={{fontSize:"0.75rem",fontWeight:700,color:x.c}}>{x.v}г</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              {activeMeal.items.map((item,i)=>(
+                <div key={i} style={{background:"#0f1a0f",border:"1px solid #1a2a1a",
+                  borderLeft:`3px solid ${item.iron?"#e74c3c":activeMeal.color}`,
+                  borderRadius:10,padding:"10px 12px",marginBottom:7}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
+                    <div style={{fontWeight:700,fontSize:"0.8rem",flex:1}}>{item.name}</div>
+                    <div style={{display:"flex",gap:4,flexShrink:0}}>
+                      {item.iron&&<span style={{background:"#e74c3c22",border:"1px solid #e74c3c44",
+                        color:"#e74c3c",fontSize:"0.5rem",padding:"2px 5px",borderRadius:4,fontWeight:700}}>🔩 Fe</span>}
+                      <span style={{background:`${activeMeal.color}22`,border:`1px solid ${activeMeal.color}44`,
+                        color:activeMeal.color,fontSize:"0.52rem",padding:"2px 6px",borderRadius:4,fontWeight:600}}>
+                        {item.amount}
+                      </span>
+                    </div>
+                  </div>
+                  <div style={{fontSize:"0.62rem",color:"#4a7a4a",marginTop:6,lineHeight:1.5}}>💡 {item.note}</div>
+                </div>
+              ))}
+            </>
+          )}
+
+          <div style={{background:"#0d1a0d",border:"1px solid #1e3a1e",borderRadius:12,padding:"12px",marginTop:14}}>
+            <div style={{fontSize:"0.6rem",letterSpacing:"0.15em",color:"#3a6a3a",marginBottom:10}}>ИТОГО ЗА ДЕНЬ</div>
+            <MacroBar label="БЕЛОК" value={totP} color="#60a5fa"/>
+            <MacroBar label="ЖИРЫ" value={totF} color="#f59e0b"/>
+            <MacroBar label="УГЛЕВОДЫ" value={totC} color="#a78bfa"/>
+            <MacroBar label="КЛЕТЧАТКА" value={totFiber} color="#4ade80"/>
+            <div style={{display:"flex",justifyContent:"space-between",marginTop:10,
+              padding:"7px 10px",background:"#0a120a",borderRadius:8}}>
+              <span style={{fontSize:"0.7rem",color:"#4a7a4a"}}>Итого калорий</span>
+              <span style={{fontSize:"0.85rem",fontWeight:900,color:"#4ade80"}}>{totKcal} ккал</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {tab==="iron"&&(
+        <div style={{padding:"12px 12px 70px"}}>
+          <div style={{background:"linear-gradient(135deg,#2a0a0a,#1a0808)",border:"1px solid #e74c3c33",
+            borderRadius:12,padding:"12px",marginBottom:14}}>
+            <div style={{fontSize:"0.6rem",letterSpacing:"0.15em",color:"#e74c3c88",marginBottom:5}}>
+              ЖЕЛЕЗО → ЛИБИДО → ТЕСТОСТЕРОН
+            </div>
+            <div style={{fontSize:"0.72rem",lineHeight:1.6,color:"#c0a0a0"}}>
+              Этот план без рыбы даёт <span style={{color:"#e74c3c",fontWeight:700}}>~13 мг/день</span>.
+              Норма для мужчин 8–11 мг — перекрыто с запасом.
+            </div>
+          </div>
+          {nIronFoods.map((f,i)=>(
+            <div key={i} style={{background:"#0f1a0f",border:"1px solid #1a2a1a",
+              borderLeft:`3px solid ${f.type==="гем"?"#e74c3c":"#f59e0b"}`,
+              borderRadius:10,padding:"10px 12px",marginBottom:7,
+              display:"flex",alignItems:"center",gap:10}}>
+              <div style={{flex:1}}>
+                <div style={{fontWeight:700,fontSize:"0.82rem"}}>{f.name}</div>
+                <div style={{fontSize:"0.6rem",color:"#3a6a3a",marginTop:2}}>
+                  {f.type==="гем"?"🔴 Гемовое — усвоение 15–35%":"🟡 Негемовое — с вит.C усвоение ×3"}
+                </div>
+              </div>
+              <div style={{textAlign:"right",flexShrink:0}}>
+                <div style={{fontSize:"0.8rem",fontWeight:900,color:f.type==="гем"?"#e74c3c":"#f59e0b"}}>{f.val}</div>
+                <div style={{fontSize:"0.52rem",color:"#4ade80",marginTop:2}}>{f.tag}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {tab==="rules"&&(
+        <div style={{padding:"12px 12px 70px"}}>
+          {nRules.map((r,i)=>(
+            <div key={i} style={{background:"#0f1a0f",border:"1px solid #1a2a1a",
+              borderRadius:10,padding:"12px 14px",marginBottom:8,
+              display:"flex",gap:12,alignItems:"flex-start"}}>
+              <span style={{fontSize:"1.3rem",flexShrink:0}}>{r.icon}</span>
+              <div>
+                <div style={{fontWeight:700,fontSize:"0.82rem"}}>{r.title}</div>
+                <div style={{fontSize:"0.63rem",color:"#4a7a4a",marginTop:4,lineHeight:1.5}}>{r.desc}</div>
+              </div>
+            </div>
+          ))}
+          <div style={{marginTop:12,background:"#0d1020",border:"1px solid #60a5fa33",
+            borderRadius:12,padding:"14px"}}>
+            <div style={{fontSize:"0.6rem",letterSpacing:"0.1em",color:"#3a6a3a",marginBottom:8}}>💊 ДОБАВКИ</div>
+            {[["Витамин D3 + K2","2000–4000 МЕ","Тестостерон, иммунитет"],
+              ["Магний глицинат","300–400 мг на ночь","Сон, восстановление, кортизол"],
+              ["Цинк","15–25 мг с едой","Прямой предшественник тестостерона"],
+              ["Омега-3 (капсулы)","2г EPA+DHA","Если чувствуешь что льняного мало"],
+            ].map(([name,dose,desc],i)=>(
+              <div key={i} style={{marginBottom:9}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <span style={{fontSize:"0.75rem",fontWeight:700,color:"#a0c0e0"}}>{name}</span>
+                  <span style={{fontSize:"0.6rem",color:"#60a5fa",fontWeight:600}}>{dose}</span>
+                </div>
+                <div style={{fontSize:"0.62rem",color:"#3a5a6a",marginTop:2}}>{desc}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",
+        width:"100%",maxWidth:480,background:"linear-gradient(0deg,#0b0f0e 65%,transparent)",
+        padding:"10px 16px 16px",textAlign:"center"}}>
+        <div style={{fontSize:"0.55rem",color:"#2a4a2a"}}>
+          🔩 Fe = железо · Дни отдыха: убери ⚡ и 💪 → −520 ккал
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── ROOT ─────────────────────────────────────────────────────
+function App(){
+  const [screen,setScreen]=useState("home");
+  return(
+    <>
+      {screen==="home"&&<HomeScreen onNav={setScreen}/>}
+      {screen==="workout"&&<WorkoutScreen onBack={()=>setScreen("home")}/>}
+      {screen==="nutrition"&&<NutritionScreen onBack={()=>setScreen("home")}/>}
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
